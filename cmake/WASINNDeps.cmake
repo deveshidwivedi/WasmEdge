@@ -415,7 +415,9 @@ function(wasmedge_setup_llama_target target)
     )
   endif()
 
-  find_package(ZLIB REQUIRED)
+  if (NOT WIN32)
+    find_package(ZLIB REQUIRED)
+  endif()
   wasmedge_setup_boost()
   wasmedge_setup_jpeg()
   wasmedge_setup_png()
@@ -427,11 +429,16 @@ function(wasmedge_setup_llama_target target)
       common
       simdjson::simdjson
       llava
-      Boost::boost
-      wasmedgeDepsJPEG
-      wasmedgeDepsPNG
-      z
     )
+    if (NOT WIN32)
+      target_link_libraries(${target}
+        PRIVATE
+        Boost::boost
+        wasmedgeDepsJPEG
+        wasmedgeDepsPNG
+        z
+      )
+    endif()
   endif()
 endfunction()
 

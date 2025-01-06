@@ -12,12 +12,15 @@
 #include <json.hpp>
 #include <simdjson.h>
 
+#if WASMEDGE_OS_LINUX || WASMEDGE_OS_MACOS
+// TODO: Support on Windows.
 #include <boost/gil.hpp>
 #include <boost/gil/extension/io/jpeg.hpp>
 #include <boost/gil/extension/io/png.hpp>
 #include <boost/gil/extension/numeric/resample.hpp>
 #include <boost/gil/extension/numeric/sampler.hpp>
 #include <boost/gil/io/io.hpp>
+#endif
 
 #include <algorithm>
 #include <filesystem>
@@ -472,6 +475,8 @@ extractBase64ImagePayload(std::string &Prompt,
   return std::make_pair(ImageBytes, ImageType);
 }
 
+#if WASMEDGE_OS_LINUX || WASMEDGE_OS_MACOS
+// TODO: Support on Windows.
 // Template to decode, resize, and flatten image for mllama input from buffer.
 template <typename FormatTag>
 std::vector<float> loadMllamaImageFromBuf(Span<const uint8_t> InBuf, uint32_t W,
@@ -585,6 +590,7 @@ struct ::mllama_image *loadMllamaImage(Span<const uint8_t> Buf,
   }
   return MllamaImage;
 }
+#endif
 
 // <<<<<<<< Input related functions <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -1385,9 +1391,15 @@ Expect<ErrNo> setInput(WasiNNEnvironment &Env, uint32_t ContextId,
             Payload->first.data(), static_cast<int>(Payload->first.size()));
       } else {
         // Mllama case. PNG and JPG format supported only.
+#if WASMEDGE_OS_LINUX || WASMEDGE_OS_MACOS
+        // TODO: Support on Windows.
         CxtRef.MllamaImageEmbd = loadMllamaImage(
             Span<const uint8_t>(Payload->first.begin(), Payload->first.size()),
             Payload->second, 560, 560);
+#else
+        RET_ERROR(ErrNo::UnsupportedOperation,
+                  "Not support mllama on Windows now."sv)
+#endif
       }
     } else {
       // The image from file.
@@ -1405,8 +1417,14 @@ Expect<ErrNo> setInput(WasiNNEnvironment &Env, uint32_t ContextId,
             CxtRef.Conf.ImagePath.c_str());
       } else {
         // Mllama case. PNG and JPG format supported only.
+#if WASMEDGE_OS_LINUX || WASMEDGE_OS_MACOS
+        // TODO: Support on Windows.
         CxtRef.MllamaImageEmbd =
             loadMllamaImage(CxtRef.Conf.ImagePath, 560, 560);
+#else
+        RET_ERROR(ErrNo::UnsupportedOperation,
+                  "Not support mllama on Windows now."sv)
+#endif
       }
     }
 
