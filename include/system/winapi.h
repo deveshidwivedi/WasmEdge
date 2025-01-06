@@ -150,6 +150,7 @@ using LPWORD_ = WORD_ *;
 using DWORD_ = uint32_t;
 using PDWORD_ = DWORD_ *;
 using LPDWORD_ = DWORD_ *;
+using DWORD64_ = uint64_t;
 using VOID_ = void;
 using PVOID_ = void *;
 using LPVOID_ = void *;
@@ -778,7 +779,7 @@ WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::HANDLE_
     GetStdHandle(WasmEdge::winapi::DWORD_ nStdHandle);
 
 WASMEDGE_WINAPI_SYMBOL_IMPORT
-void WASMEDGE_WINAPI_WINAPI_CC
+WasmEdge::winapi::VOID_ WASMEDGE_WINAPI_WINAPI_CC
 GetSystemTimeAsFileTime(WasmEdge::winapi::LPFILETIME_ lpSystemTimeAsFileTime);
 
 WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::BOOL_ WASMEDGE_WINAPI_WINAPI_CC
@@ -945,7 +946,7 @@ WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::HANDLE_
     WASMEDGE_WINAPI_WINAPI_CC
     CreateTransaction(
         WasmEdge::winapi::LPSECURITY_ATTRIBUTES_ lpTransactionAttributes,
-        void *UOW, WasmEdge::winapi::DWORD_ CreateOptions,
+        WasmEdge::winapi::PVOID_ UOW, WasmEdge::winapi::DWORD_ CreateOptions,
         WasmEdge::winapi::DWORD_ IsolationLevel,
         WasmEdge::winapi::DWORD_ IsolationFlags,
         WasmEdge::winapi::DWORD_ Timeout,
@@ -1013,7 +1014,8 @@ WasmEdge::winapi::HANDLE_ WASMEDGE_WINAPI_WINAPI_CC CreateFileMappingFromApp(
     WasmEdge::winapi::ULONG64_ MaximumSize, WasmEdge::winapi::PCWSTR_ Name);
 
 WASMEDGE_WINAPI_SYMBOL_IMPORT
-void WASMEDGE_WINAPI_WINAPI_CC GetSystemTimePreciseAsFileTime(
+WasmEdge::winapi::VOID_ WASMEDGE_WINAPI_WINAPI_CC
+GetSystemTimePreciseAsFileTime(
     WasmEdge::winapi::LPFILETIME_ lpSystemTimeAsFileTime);
 
 WASMEDGE_WINAPI_SYMBOL_IMPORT
@@ -1115,6 +1117,262 @@ using NEARPROC_ = int(WASMEDGE_WINAPI_WINAPI_CC *)();
 using PROC_ = int(WASMEDGE_WINAPI_WINAPI_CC *)();
 #endif
 
+#if defined(_M_IX86)
+static inline constexpr const DWORD_ CONTEXT_i386_ = 0x10000L;
+static inline constexpr const DWORD_ CONTEXT_CONTROL_ = CONTEXT_i386_ | 0x1L;
+static inline constexpr const DWORD_ CONTEXT_INTEGER_ = CONTEXT_i386_ | 0x2L;
+
+static inline constexpr const size_t SIZE_OF_80387_REGISTERS_ = 80;
+using FLOATING_SAVE_AREA_ = struct _FLOATING_SAVE_AREA {
+  ULONG_ ControlWord;
+  ULONG_ StatusWord;
+  ULONG_ TagWord;
+  ULONG_ ErrorOffset;
+  ULONG_ ErrorSelector;
+  ULONG_ DataOffset;
+  ULONG_ DataSelector;
+  UCHAR_ RegisterArea[SIZE_OF_80387_REGISTERS_];
+  ULONG_ Cr0NpxState;
+};
+
+static inline constexpr const size_t MAXIMUM_SUPPORTED_EXTENSION_ = 512;
+using CONTEXT_ = struct _CONTEXT {
+  ULONG_ ContextFlags;
+  ULONG_ Dr0;
+  ULONG_ Dr1;
+  ULONG_ Dr2;
+  ULONG_ Dr3;
+  ULONG_ Dr6;
+  ULONG_ Dr7;
+  FLOATING_SAVE_AREA_ FloatSave;
+  ULONG_ SegGs;
+  ULONG_ SegFs;
+  ULONG_ SegEs;
+  ULONG_ SegDs;
+  ULONG_ Edi;
+  ULONG_ Esi;
+  ULONG_ Ebx;
+  ULONG_ Edx;
+  ULONG_ Ecx;
+  ULONG_ Eax;
+  ULONG_ Ebp;
+  ULONG_ Eip;
+  ULONG_ SegCs;
+  ULONG_ EFlags;
+  ULONG_ Esp;
+  ULONG_ SegSs;
+  UCHAR_ ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION_];
+};
+#elif defined(_M_X64)
+static inline constexpr const DWORD_ CONTEXT_AMD64_ = 0x100000L;
+static inline constexpr const DWORD_ CONTEXT_CONTROL_ = CONTEXT_AMD64_ | 0x1L;
+static inline constexpr const DWORD_ CONTEXT_INTEGER_ = CONTEXT_AMD64_ | 0x2L;
+
+using M128A_ = struct alignas(16) _M128A {
+  ULONGLONG_ Low;
+  LONGLONG_ High;
+};
+
+using XMM_SAVE_AREA32_ = struct _XMM_SAVE_AREA32 {
+  WORD_ ControlWord;
+  WORD_ StatusWord;
+  BYTE_ TagWord;
+  BYTE_ Reserved1;
+  WORD_ ErrorOpcode;
+  DWORD_ ErrorOffset;
+  WORD_ ErrorSelector;
+  WORD_ Reserved2;
+  DWORD_ DataOffset;
+  WORD_ DataSelector;
+  WORD_ Reserved3;
+  DWORD_ MxCsr;
+  DWORD_ MxCsr_Mask;
+  M128A_ FloatRegisters[8];
+  M128A_ XmmRegisters[16];
+  BYTE_ Reserved4[96];
+};
+
+using CONTEXT_ = struct alignas(16) _CONTEXT {
+  ULONG64_ P1Home;
+  ULONG64_ P2Home;
+  ULONG64_ P3Home;
+  ULONG64_ P4Home;
+  ULONG64_ P5Home;
+  ULONG64_ P6Home;
+  ULONG_ ContextFlags;
+  ULONG_ MxCsr;
+  USHORT_ SegCs;
+  USHORT_ SegDs;
+  USHORT_ SegEs;
+  USHORT_ SegFs;
+  USHORT_ SegGs;
+  USHORT_ SegSs;
+  ULONG_ EFlags;
+  ULONG64_ Dr0;
+  ULONG64_ Dr1;
+  ULONG64_ Dr2;
+  ULONG64_ Dr3;
+  ULONG64_ Dr6;
+  ULONG64_ Dr7;
+  ULONG64_ Rax;
+  ULONG64_ Rcx;
+  ULONG64_ Rdx;
+  ULONG64_ Rbx;
+  ULONG64_ Rsp;
+  ULONG64_ Rbp;
+  ULONG64_ Rsi;
+  ULONG64_ Rdi;
+  ULONG64_ R8;
+  ULONG64_ R9;
+  ULONG64_ R10;
+  ULONG64_ R11;
+  ULONG64_ R12;
+  ULONG64_ R13;
+  ULONG64_ R14;
+  ULONG64_ R15;
+  ULONG64_ Rip;
+  union {
+    XMM_SAVE_AREA32_ FltSave;
+    struct {
+      M128A_ Header[2];
+      M128A_ Legacy[8];
+      M128A_ Xmm0;
+      M128A_ Xmm1;
+      M128A_ Xmm2;
+      M128A_ Xmm3;
+      M128A_ Xmm4;
+      M128A_ Xmm5;
+      M128A_ Xmm6;
+      M128A_ Xmm7;
+      M128A_ Xmm8;
+      M128A_ Xmm9;
+      M128A_ Xmm10;
+      M128A_ Xmm11;
+      M128A_ Xmm12;
+      M128A_ Xmm13;
+      M128A_ Xmm14;
+      M128A_ Xmm15;
+    } DUMMYSTRUCTNAME;
+  } DUMMYUNIONNAME;
+  M128A_ VectorRegister[26];
+  ULONG64_ VectorControl;
+  ULONG64_ DebugControl;
+  ULONG64_ LastBranchToRip;
+  ULONG64_ LastBranchFromRip;
+  ULONG64_ LastExceptionToRip;
+  ULONG64_ LastExceptionFromRip;
+};
+#elif defined(_M_ARM)
+static inline constexpr const DWORD_ CONTEXT_ARM_ = 0x0200000L;
+static inline constexpr const DWORD_ CONTEXT_CONTROL_ = CONTEXT_ARM_ | 0x1L;
+static inline constexpr const DWORD_ CONTEXT_INTEGER_ = CONTEXT_ARM_ | 0x2L;
+
+using NEON128_ = struct _NEON128 {
+  ULONGLONG_ Low;
+  LONGLONG_ High;
+};
+using CONTEXT_ = struct alignas(8) _CONTEXT {
+  DWORD_ ContextFlags;
+  DWORD_ R0;
+  DWORD_ R1;
+  DWORD_ R2;
+  DWORD_ R3;
+  DWORD_ R4;
+  DWORD_ R5;
+  DWORD_ R6;
+  DWORD_ R7;
+  DWORD_ R8;
+  DWORD_ R9;
+  DWORD_ R10;
+  DWORD_ R11;
+  DWORD_ R12;
+  DWORD_ Sp;
+  DWORD_ Lr;
+  DWORD_ Pc;
+  DWORD_ Cpsr;
+  DWORD_ Fpscr;
+  DWORD_ Padding;
+  union {
+    NEON128_ Q[16];
+    ULONGLONG_ D[32];
+    DWORD_ S[32];
+  } DUMMYUNIONNAME;
+  DWORD_ Bvr[ARM_MAX_BREAKPOINTS];
+  DWORD_ Bcr[ARM_MAX_BREAKPOINTS];
+  DWORD_ Wvr[ARM_MAX_WATCHPOINTS];
+  DWORD_ Wcr[ARM_MAX_WATCHPOINTS];
+  DWORD_ Padding2[2];
+}
+#elif defined(_M_ARM64)
+static inline constexpr const DWORD_ CONTEXT_ARM64_ = 0x0400000L;
+static inline constexpr const DWORD_ CONTEXT_CONTROL_ = CONTEXT_ARM64_ | 0x1L;
+static inline constexpr const DWORD_ CONTEXT_INTEGER_ = CONTEXT_ARM64_ | 0x2L;
+
+using NEON128_ = union _NEON128 {
+  struct {
+    ULONGLONG_ Low;
+    LONGLONG_ High;
+  } DUMMYSTRUCTNAME;
+  double D[2];
+  float S[4];
+  WORD_ H[8];
+  BYTE_ B[16];
+};
+
+static inline constexpr const size_t ARM64_MAX_BREAKPOINTS_ = 8;
+static inline constexpr const size_t ARM64_MAX_WATCHPOINTS_ = 2;
+using CONTEXT_ = struct alignas(16) _CONTEXT {
+  ULONG_ ContextFlags;
+  ULONG_ Cpsr;
+  union {
+    struct {
+      DWORD64_ X0;
+      DWORD64_ X1;
+      DWORD64_ X2;
+      DWORD64_ X3;
+      DWORD64_ X4;
+      DWORD64_ X5;
+      DWORD64_ X6;
+      DWORD64_ X7;
+      DWORD64_ X8;
+      DWORD64_ X9;
+      DWORD64_ X10;
+      DWORD64_ X11;
+      DWORD64_ X12;
+      DWORD64_ X13;
+      DWORD64_ X14;
+      DWORD64_ X15;
+      DWORD64_ X16;
+      DWORD64_ X17;
+      DWORD64_ X18;
+      DWORD64_ X19;
+      DWORD64_ X20;
+      DWORD64_ X21;
+      DWORD64_ X22;
+      DWORD64_ X23;
+      DWORD64_ X24;
+      DWORD64_ X25;
+      DWORD64_ X26;
+      DWORD64_ X27;
+      DWORD64_ X28;
+      DWORD64_ Fp;
+      DWORD64_ Lr;
+    } DUMMYSTRUCTNAME;
+    DWORD64_ X[31];
+  } DUMMYUNIONNAME;
+  DWORD_ Sp;
+  DWORD_ Pc;
+  NEON128_ V[32];
+  DWORD_ Fpcr;
+  DWORD_ Fpsr;
+  DWORD_ Bcr[ARM64_MAX_BREAKPOINTS_];
+  DWORD64_ Bvr[ARM64_MAX_BREAKPOINTS_];
+  DWORD_ Wcr[ARM64_MAX_WATCHPOINTS_];
+  DWORD64_ Wvr[ARM64_MAX_WATCHPOINTS_];
+};
+#endif
+using PCONTEXT_ = CONTEXT_ *;
+
 using RUNTIME_FUNCTION_ = struct _IMAGE_RUNTIME_FUNCTION_ENTRY {
   DWORD_ BeginAddress;
   DWORD_ EndAddress;
@@ -1125,6 +1383,65 @@ using RUNTIME_FUNCTION_ = struct _IMAGE_RUNTIME_FUNCTION_ENTRY {
 };
 using PRUNTIME_FUNCTION_ = RUNTIME_FUNCTION_ *;
 
+using ADDRESS_MODE_ = enum _ADDRESS_MODE {
+  AddrMode1616,
+  AddrMode1632,
+  AddrModeReal,
+  AddrModeFlat
+};
+
+using ADDRESS64_ = struct _tagADDRESS64 {
+  DWORD64_ Offset;
+  WORD_ Segment;
+  ADDRESS_MODE_ Mode;
+};
+using LPADDRESS64_ = ADDRESS64_ *;
+
+using KDHELP64_ = struct _KDHELP64 {
+  DWORD64_ Thread;
+  DWORD_ ThCallbackStack;
+  DWORD_ ThCallbackBStore;
+  DWORD_ NextCallback;
+  DWORD_ FramePointer;
+  DWORD64_ KiCallUserMode;
+  DWORD64_ KeUserCallbackDispatcher;
+  DWORD64_ SystemRangeStart;
+  DWORD64_ KiUserExceptionDispatcher;
+  DWORD64_ StackBase;
+  DWORD64_ StackLimit;
+  DWORD_ BuildVersion;
+  DWORD_ RetpolineStubFunctionTableSize;
+  DWORD64_ RetpolineStubFunctionTable;
+  DWORD_ RetpolineStubOffset;
+  DWORD_ RetpolineStubSize;
+  DWORD64_ Reserved0[2];
+};
+
+using STACKFRAME64_ = struct _tagSTACKFRAME64 {
+  ADDRESS64_ AddrPC;
+  ADDRESS64_ AddrReturn;
+  ADDRESS64_ AddrFrame;
+  ADDRESS64_ AddrStack;
+  ADDRESS64_ AddrBStore;
+  PVOID_ FuncTableEntry;
+  DWORD64_ Params[4];
+  BOOL_ Far;
+  BOOL_ Virtual;
+  DWORD64_ Reserved[3];
+  KDHELP64_ KdHelp;
+};
+using LPSTACKFRAME64_ = STACKFRAME64_ *;
+
+using PREAD_PROCESS_MEMORY_ROUTINE64_ = BOOL_(WASMEDGE_WINAPI_WINAPI_CC *)(
+    HANDLE_ hProcess, DWORD64_ qwBaseAddress, PVOID_ lpBuffer, DWORD_ nSize,
+    LPDWORD_ lpNumberOfBytesRead);
+using PFUNCTION_TABLE_ACCESS_ROUTINE64_ =
+    PVOID_(WASMEDGE_WINAPI_WINAPI_CC *)(HANDLE_ hProcess, DWORD64_ AddrBase);
+using PGET_MODULE_BASE_ROUTINE64_ =
+    DWORD64_(WASMEDGE_WINAPI_WINAPI_CC *)(HANDLE_ hProcess, DWORD64_ Address);
+using PTRANSLATE_ADDRESS_ROUTINE64_ = DWORD64_(WASMEDGE_WINAPI_WINAPI_CC *)(
+    HANDLE_ hProcess, HANDLE_ hThread, LPADDRESS64_ lpaddr);
+
 static inline constexpr const DWORD_ FORMAT_MESSAGE_ALLOCATE_BUFFER_ =
     0x00000100;
 static inline constexpr const DWORD_ FORMAT_MESSAGE_IGNORE_INSERTS_ =
@@ -1132,6 +1449,12 @@ static inline constexpr const DWORD_ FORMAT_MESSAGE_IGNORE_INSERTS_ =
 static inline constexpr const DWORD_ FORMAT_MESSAGE_FROM_SYSTEM_ = 0x00001000;
 static inline constexpr const WORD_ LANG_NEUTRAL_ = 0x00;
 static inline constexpr const WORD_ SUBLANG_DEFAULT_ = 0x01;
+
+static inline constexpr const DWORD_ IMAGE_FILE_MACHINE_UNKNOWN_ = 0;
+static inline constexpr const DWORD_ IMAGE_FILE_MACHINE_I386_ = 0x014c;
+static inline constexpr const DWORD_ IMAGE_FILE_MACHINE_ARMNT_ = 0x01c4;
+static inline constexpr const DWORD_ IMAGE_FILE_MACHINE_AMD64_ = 0x8664;
+static inline constexpr const DWORD_ IMAGE_FILE_MACHINE_ARM64_ = 0xaa64;
 
 WASMEDGE_WINAPI_FORCEINLINE inline constexpr WORD_
 MAKELANGID_(WORD_ p, WORD_ s) noexcept {
@@ -1175,9 +1498,34 @@ WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::BOOLEAN_
                         WasmEdge::winapi::ULONG_ EntryCount,
                         WasmEdge::winapi::ULONG_PTR_ BaseAddress);
 
+[[gnu::returns_twice]] WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::VOID_
+    WASMEDGE_WINAPI_WINAPI_CC
+    RtlCaptureContext(WasmEdge::winapi::PCONTEXT_ ContextRecord);
+
 WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::BOOLEAN_
     WASMEDGE_WINAPI_WINAPI_CC
     RtlDeleteFunctionTable(WasmEdge::winapi::PRUNTIME_FUNCTION_ FunctionTable);
+
+WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::BOOL_ WASMEDGE_WINAPI_WINAPI_CC
+StackWalk64(WasmEdge::winapi::DWORD_ MachineType,
+            WasmEdge::winapi::HANDLE_ hProcess,
+            WasmEdge::winapi::HANDLE_ hThread,
+            WasmEdge::winapi::LPSTACKFRAME64_ StackFrame,
+            WasmEdge::winapi::PVOID_ ContextRecord,
+            WasmEdge::winapi::PREAD_PROCESS_MEMORY_ROUTINE64_ ReadMemoryRoutine,
+            WasmEdge::winapi::PFUNCTION_TABLE_ACCESS_ROUTINE64_
+                FunctionTableAccessRoutine,
+            WasmEdge::winapi::PGET_MODULE_BASE_ROUTINE64_ GetModuleBaseRoutine,
+            WasmEdge::winapi::PTRANSLATE_ADDRESS_ROUTINE64_ TranslateAddress);
+
+WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::PVOID_ WASMEDGE_WINAPI_WINAPI_CC
+SymFunctionTableAccess64(WasmEdge::winapi::HANDLE_ hProcess,
+                         WasmEdge::winapi::DWORD64_ AddrBase);
+
+WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::DWORD64_
+    WASMEDGE_WINAPI_WINAPI_CC
+    SymGetModuleBase64(WasmEdge::winapi::HANDLE_ hProcess,
+                       WasmEdge::winapi::DWORD64_ qwAddr);
 
 } // extern "C"
 
@@ -1188,7 +1536,11 @@ using ::GetModuleHandleW;
 using ::GetProcAddress;
 using ::LoadLibraryExW;
 using ::RtlAddFunctionTable;
+using ::RtlCaptureContext;
 using ::RtlDeleteFunctionTable;
+using ::StackWalk64;
+using ::SymFunctionTableAccess64;
+using ::SymGetModuleBase64;
 } // namespace WasmEdge::winapi
 
 namespace WasmEdge::winapi {
@@ -1262,7 +1614,7 @@ static inline constexpr const DWORD_ PAGE_EXECUTE_READ_ = 0x20;
 
 extern "C" {
 
-WASMEDGE_WINAPI_SYMBOL_IMPORT void WASMEDGE_WINAPI_WINAPI_CC
+WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::VOID_ WASMEDGE_WINAPI_WINAPI_CC
 CoTaskMemFree(WasmEdge::winapi::LPVOID_ pv);
 
 WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::HLOCAL_
@@ -1306,9 +1658,6 @@ static inline constexpr const DWORD_ EXCEPTION_INT_DIVIDE_BY_ZERO_ =
 static inline constexpr const DWORD_ EXCEPTION_INT_OVERFLOW_ = 0xC0000095L;
 static inline constexpr const LONG_ EXCEPTION_CONTINUE_EXECUTION_ =
     static_cast<LONG_>(0xffffffff);
-
-using CONTEXT_ = struct _CONTEXT;
-using PCONTEXT_ = CONTEXT_ *;
 
 using EXCEPTION_RECORD_ = struct _EXCEPTION_RECORD {
   DWORD_ ExceptionCode;
@@ -1381,12 +1730,10 @@ AdjustTokenPrivileges(WasmEdge::winapi::HANDLE_ TokenHandle,
                       WasmEdge::winapi::PDWORD_ ReturnLength);
 
 WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::HANDLE_
-    WASMEDGE_WINAPI_WINAPI_CC
-    GetCurrentProcess(void);
+    WASMEDGE_WINAPI_WINAPI_CC GetCurrentProcess(WasmEdge::winapi::VOID_);
 
 WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::HANDLE_
-    WASMEDGE_WINAPI_WINAPI_CC
-    GetCurrentThread(void);
+    WASMEDGE_WINAPI_WINAPI_CC GetCurrentThread(WasmEdge::winapi::VOID_);
 
 WASMEDGE_WINAPI_SYMBOL_IMPORT
 WasmEdge::winapi::BOOL_ WASMEDGE_WINAPI_WINAPI_CC
@@ -1755,10 +2102,11 @@ WASMEDGE_WINAPI_SYMBOL_IMPORT WasmEdge::winapi::SOCKET_
     WASMEDGE_WINAPI_WINAPI_CC
     socket(int af, int type, int protocol);
 
-WASMEDGE_WINAPI_SYMBOL_IMPORT int WASMEDGE_WINAPI_WINAPI_CC WSACleanup(void);
+WASMEDGE_WINAPI_SYMBOL_IMPORT int
+    WASMEDGE_WINAPI_WINAPI_CC WSACleanup(WasmEdge::winapi::VOID_);
 
-WASMEDGE_WINAPI_SYMBOL_IMPORT int WASMEDGE_WINAPI_WINAPI_CC
-WSAGetLastError(void);
+WASMEDGE_WINAPI_SYMBOL_IMPORT int
+    WASMEDGE_WINAPI_WINAPI_CC WSAGetLastError(WasmEdge::winapi::VOID_);
 
 WASMEDGE_WINAPI_SYMBOL_IMPORT int WASMEDGE_WINAPI_WINAPI_CC
 WSAStartup(WasmEdge::winapi::WORD_ wVersionRequested,
